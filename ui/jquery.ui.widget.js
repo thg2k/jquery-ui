@@ -174,7 +174,7 @@ $.Widget.prototype = {
 			return $.extend( {}, self.options );
 		}
 
-		if  (typeof key === "string" ) {
+		if ( typeof key === "string" ) {
 			if ( value === undefined ) {
 				return this.options[ key ];
 			}
@@ -231,7 +231,7 @@ $.Widget.prototype = {
 		this.element.trigger( event, data );
 
 		return !( $.isFunction(callback) &&
-			callback.call( this.element[0], event, data ) === false ||
+			(callback.call( this.element[0], event, data ) === false) ||
 			event.isDefaultPrevented() );
 	}
 };
