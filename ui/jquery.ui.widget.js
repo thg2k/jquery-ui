@@ -123,11 +123,15 @@ $.Widget = function( options, element ) {
 };
 
 $.Widget.prototype = {
+
 	widgetName: "widget",
+
 	widgetEventPrefix: "",
+
 	options: {
 		disabled: false
 	},
+
 	_createWidget: function( options, element ) {
 		// $.widget.bridge stores the plugin instance, but we do it anyway
 		// so that it's stored even before the _create function runs
@@ -146,7 +150,9 @@ $.Widget.prototype = {
 		this._create();
 		this._init();
 	},
+
 	_create: function() {},
+
 	_init: function() {},
 
 	destroy: function() {
@@ -188,6 +194,7 @@ $.Widget.prototype = {
 
 		return self;
 	},
+
 	_setOption: function( key, value ) {
 		this.options[ key ] = value;
 
@@ -205,6 +212,7 @@ $.Widget.prototype = {
 	enable: function() {
 		return this._setOption( "disabled", false );
 	},
+
 	disable: function() {
 		return this._setOption( "disabled", true );
 	},
