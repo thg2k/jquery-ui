@@ -329,8 +329,8 @@ $.widget("ui.dialog", {
 			uiDialog.find('.ui-dialog-buttonpane :tabbable').get().concat(
 				uiDialog.get()))).eq(0).focus();
 
-		self._trigger('open');
 		self._isOpen = true;
+		self._trigger('open');
 
 		return self;
 	},
@@ -649,7 +649,8 @@ $.widget("ui.dialog", {
 		this.element
 			.css(options.height === 'auto' ? {
 					minHeight: Math.max(options.minHeight - nonContentHeight, 0),
-					height: 'auto'
+					height: $.support.minHeight ? 'auto' :
+						Math.max(options.minHeight - nonContentHeight, 0)
 				} : {
 					minHeight: 0,
 					height: Math.max(options.height - nonContentHeight, 0)				

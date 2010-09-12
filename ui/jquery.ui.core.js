@@ -56,7 +56,7 @@ $.extend( $.ui, {
 	}
 });
 
-//jQuery plugins
+// plugins
 $.fn.extend({
 	_focus: $.fn.focus,
 	focus: function( delay, fn ) {
@@ -115,59 +115,20 @@ $.fn.extend({
 		}
 
 		return 0;
+	},
+	
+	disableSelection: function() {
+		return this.bind(
+			"mousedown.ui-disableSelection selectstart.ui-disableSelection",
+			function( event ) {
+				event.preventDefault();
+			});
+	},
+
+	enableSelection: function() {
+		return this.unbind( ".ui-disableSelection" );
 	}
 });
-
-(function() {
-	var elem = document.createElement( "div" ),
-		style = elem.style,
-		userSelectProp = "userSelect" in style && "userSelect";
-
-	if ( !userSelectProp ) {
-		$.each( [ "Moz", "Webkit", "Khtml" ], function( i, prefix ) {
-			var vendorProp = prefix + "UserSelect";
-			if ( vendorProp in style ) {
-				userSelectProp = vendorProp;
-				return false;
-			}
-		});
-	}
-	var selectStart = !userSelectProp && "onselectstart" in elem && "selectstart.mouse";
-
-	elem = null;
-
-	$.fn.extend({
-		disableSelection: function() {
-			if ( userSelectProp ) {
-				this.css( userSelectProp, "none" );
-			} else {
-				this.find( "*" ).andSelf().attr( "unselectable", "on" );
-			}
-
-			if ( selectStart ) {
-				this.bind( selectStart, function() {
-					return false;
-				});
-			}
-
-			return this;
-		},
-
-		enableSelection: function() {
-			if ( userSelectProp ) {
-				this.css( userSelectProp, "" );
-			} else {
-				this.find( "*" ).andSelf().attr( "unselectable", "off" );
-			}
-
-			if ( selectStart ) {
-				this.unbind( selectStart );
-			}
-
-			return this;
-		}
-	});
-})();
 
 $.each( [ "Width", "Height" ], function( i, name ) {
 	var side = name === "Width" ? [ "Left", "Right" ] : [ "Top", "Bottom" ],
@@ -213,7 +174,7 @@ $.each( [ "Width", "Height" ], function( i, name ) {
 	};
 });
 
-//Additional selectors
+// selectors
 function visible( element ) {
 	return !$( element ).parents().andSelf().filter(function() {
 		return $.curCSS( this, "visibility" ) === "hidden" ||
@@ -254,10 +215,29 @@ $.extend( $.expr[ ":" ], {
 	}
 });
 
+// support
+$(function() {
+	var div = document.createElement( "div" ),
+		body = document.body;
+
+	$.extend( div.style, {
+		minHeight: "100px",
+		height: "auto",
+		padding: 0,
+		borderWidth: 0
+	});
+
+	$.support.minHeight = body.appendChild( div ).offsetHeight === 100;
+	// set display to none to avoid a layout bug in IE
+	// http://dev.jquery.com/ticket/4014
+	body.removeChild( div ).style.display = "none";
+});
 
 
 
 
+
+// deprecated
 $.extend( $.ui, {
 	// $.ui.plugin is deprecated.  Use the proxy pattern instead.
 	plugin: {
