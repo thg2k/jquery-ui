@@ -34,10 +34,13 @@ if ( $.cleanData ) {
 	};
 }
 
+// factory to create new widget classes
 $.widget = function( name, base, prototype ) {
+	// name is of the form "ui.mywidget"
 	var namespace = name.split( "." )[ 0 ],
 		fullName;
 	name = name.split( "." )[ 1 ];
+	// now fullName is of the form "ui-mywidget"
 	fullName = namespace + "-" + name;
 
 	if ( !prototype ) {
@@ -45,12 +48,14 @@ $.widget = function( name, base, prototype ) {
 		base = $.Widget;
 	}
 
-	// create selector for plugin
+	// create selector for plugin of the form ":ui-mywidget"
 	$.expr[ ":" ][ fullName ] = function( elem ) {
 		return !!$.data( elem, name );
 	};
 
+	// initialize the namespace
 	$[ namespace ] = $[ namespace ] || {};
+
 	$[ namespace ][ name ] = function( options, element ) {
 		// allow instantiation without initializing for simple inheritance
 		if ( arguments.length ) {
@@ -142,6 +147,7 @@ $.Widget.prototype = {
 	options: {
 		disabled: false
 	},
+
 	_createWidget: function( options, element ) {
 		// $.widget.bridge stores the plugin instance, but we do it anyway
 		// so that it's stored even before the _create function runs
@@ -161,10 +167,13 @@ $.Widget.prototype = {
 		this._trigger( "create" );
 		this._init();
 	},
+
 	_getCreateOptions: function() {
 		return $.metadata && $.metadata.get( this.element[0] )[ this.widgetName ];
 	},
+
 	_create: function() {},
+
 	_init: function() {},
 
 	destroy: function() {
@@ -203,6 +212,7 @@ $.Widget.prototype = {
 
 		return this;
 	},
+
 	_setOptions: function( options ) {
 		var self = this;
 		$.each( options, function( key, value ) {
@@ -211,6 +221,7 @@ $.Widget.prototype = {
 
 		return this;
 	},
+
 	_setOption: function( key, value ) {
 		this.options[ key ] = value;
 
@@ -228,6 +239,7 @@ $.Widget.prototype = {
 	enable: function() {
 		return this._setOption( "disabled", false );
 	},
+
 	disable: function() {
 		return this._setOption( "disabled", true );
 	},
