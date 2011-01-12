@@ -24,7 +24,8 @@ $.widget( "ui.accordion", {
 		heightStyle: null, // "auto"
 		icons: {
 			header: "ui-icon-triangle-1-e",
-			headerSelected: "ui-icon-triangle-1-s"
+			// TODO: set to "ui-icon-triangle-1-s" in 2.0 (#6835)
+			activeHeader: null // "ui-icon-triangle-1-s"
 		}
 	},
 
@@ -133,7 +134,7 @@ $.widget( "ui.accordion", {
 				.prependTo( this.headers );
 			this.active.children( ".ui-icon" )
 				.toggleClass(options.icons.header)
-				.toggleClass(options.icons.headerSelected);
+				.toggleClass(options.icons.activeHeader);
 			this.element.addClass( "ui-accordion-icons" );
 		}
 	},
@@ -307,7 +308,7 @@ $.widget( "ui.accordion", {
 				.removeClass( "ui-state-active ui-corner-top" )
 				.addClass( "ui-state-default ui-corner-all" )
 				.children( ".ui-icon" )
-					.removeClass( options.icons.headerSelected )
+					.removeClass( options.icons.activeHeader )
 					.addClass( options.icons.header );
 			this.active.next().addClass( "ui-accordion-content-active" );
 			var toHide = this.active.next(),
@@ -338,27 +339,9 @@ $.widget( "ui.accordion", {
 			return;
 		}
 
-		// switch classes
-		this.active
-			.removeClass( "ui-state-active ui-corner-top" )
-			.addClass( "ui-state-default ui-corner-all" )
-			.children( ".ui-icon" )
-				.removeClass( options.icons.headerSelected )
-				.addClass( options.icons.header );
-		if ( !clickedIsActive ) {
-			clicked
-				.removeClass( "ui-state-default ui-corner-all" )
-				.addClass( "ui-state-active ui-corner-top" )
-				.children( ".ui-icon" )
-					.removeClass( options.icons.header )
-					.addClass( options.icons.headerSelected );
-			clicked
-				.next()
-				.addClass( "ui-accordion-content-active" );
-		}
-
 		// find elements to show and hide
-		var toShow = clicked.next(),
+		var active = this.active,
+			toShow = clicked.next(),
 			toHide = this.active.next(),
 			data = {
 				options: options,
@@ -369,8 +352,29 @@ $.widget( "ui.accordion", {
 			},
 			down = this.headers.index( this.active[0] ) > this.headers.index( clicked[0] );
 
+		// when the call to ._toggle() comes after the class changes
+		// it causes a very odd bug in IE 8 (see #6720)
 		this.active = clickedIsActive ? $([]) : clicked;
 		this._toggle( toShow, toHide, data, clickedIsActive, down );
+
+		// switch classes
+		active
+			.removeClass( "ui-state-active ui-corner-top" )
+			.addClass( "ui-state-default ui-corner-all" )
+			.children( ".ui-icon" )
+				.removeClass( options.icons.activeHeader )
+				.addClass( options.icons.header );
+		if ( !clickedIsActive ) {
+			clicked
+				.removeClass( "ui-state-default ui-corner-all" )
+				.addClass( "ui-state-active ui-corner-top" )
+				.children( ".ui-icon" )
+					.removeClass( options.icons.header )
+					.addClass( options.icons.activeHeader );
+			clicked
+				.next()
+				.addClass( "ui-accordion-content-active" );
+		}
 
 		return;
 	},
@@ -491,6 +495,8 @@ $.widget( "ui.accordion", {
 
 		// other classes are removed before the animation; this one needs to stay until completed
 		this.toHide.removeClass( "ui-accordion-content-active" );
+		// Work around for rendering bug in IE (#5421)
+		this.toHide.parent()[0].className = this.toHide.parent()[0].className;
 
 		this._trigger( "change", null, this.data );
 	}
@@ -623,6 +629,7 @@ $.extend( $.ui.accordion, {
 	};
 }( jQuery, jQuery.ui.accordion.prototype ) );
 
+// height options
 (function( $, prototype ) {
 	$.extend( prototype.options, {
 		autoHeight: true, // use heightStyle: "auto"
@@ -637,6 +644,7 @@ $.extend( $.ui.accordion, {
 		_create: function() {
 			this.options.heightStyle = this.options.heightStyle ||
 				this._mergeHeightStyle();
+
 			_create.call( this );
 		},
 
@@ -663,6 +671,18 @@ $.extend( $.ui.accordion, {
 			}
 		}
 	});
+}( jQuery, jQuery.ui.accordion.prototype ) );
+
+// icon options
+(function( $, prototype ) {
+	prototype.options.icons.headerSelected = "ui-icon-triangle-1-s";
+
+	var _createIcons = prototype._createIcons;
+	prototype._createIcons = function() {
+		this.options.icons.activeHeader = this.options.icons.activeHeader ||
+			this.options.icons.headerSelected;
+		_createIcons.call( this );
+	};
 }( jQuery, jQuery.ui.accordion.prototype ) );
 
 })( jQuery );
