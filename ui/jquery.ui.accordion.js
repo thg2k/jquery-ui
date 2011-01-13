@@ -73,7 +73,7 @@ $.widget( "ui.accordion", {
 			.addClass( "ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom" );
 		self.headers.find( ":first-child" ).addClass( "ui-accordion-heading" );
 
-		self.active = self._findActive( self.active || options.active )
+		self.active = self._findActive( options.active )
 			.addClass( "ui-state-default ui-state-active" )
 			.toggleClass( "ui-corner-all" )
 			.toggleClass( "ui-corner-top" );
@@ -87,9 +87,7 @@ $.widget( "ui.accordion", {
 
 		self.headers
 			.attr( "role", "tab" )
-			.bind( "keydown.accordion", function( event ) {
-				return self._keydown( event );
-			})
+			.bind( "keydown.accordion", $.proxy( self, "_keydown" ) )
 			.next()
 				.attr( "role", "tabpanel" );
 
@@ -119,10 +117,8 @@ $.widget( "ui.accordion", {
 		}
 
 		if ( options.event ) {
-			self.headers.bind( options.event.split(" ").join(".accordion ") + ".accordion", function(event) {
-				self._clickHandler.call( self, event, this );
-				event.preventDefault();
-			});
+			self.headers.bind( options.event.split(" ").join(".accordion ") + ".accordion",
+				$.proxy( self, "_eventHandler" ) );
 		}
 	},
 
@@ -173,11 +169,14 @@ $.widget( "ui.accordion", {
 	},
 
 	_setOption: function( key, value ) {
+		if ( key == "active" ) {
+			// _activate() will handle invalid values and update this.options
+			this._activate( value );
+			return;
+		}
+		
 		$.Widget.prototype._setOption.apply( this, arguments );
 		
-		if ( key == "active" ) {
-			this.activate( value );
-		}
 		if ( key == "icons" ) {
 			this._destroyIcons();
 			if ( value ) {
@@ -213,18 +212,15 @@ $.widget( "ui.accordion", {
 				break;
 			case keyCode.SPACE:
 			case keyCode.ENTER:
-				this._clickHandler( { target: event.target }, event.target );
-				event.preventDefault();
+				this._eventHandler( event );
 		}
 
 		if ( toFocus ) {
 			$( event.target ).attr( "tabIndex", -1 );
 			$( toFocus ).attr( "tabIndex", 0 );
 			toFocus.focus();
-			return false;
+			event.preventDefault();
 		}
-
-		return true;
 	},
 
 	resize: function() {
@@ -272,72 +268,69 @@ $.widget( "ui.accordion", {
 		return this;
 	},
 
-	activate: function( index ) {
-		// TODO this gets called on init, changing the option without an explicit call for that
-		this.options.active = index;
-		// call clickHandler with custom event
+	_activate: function( index ) {
 		var active = this._findActive( index )[ 0 ];
-		this._clickHandler( { target: active }, active );
 
-		return this;
+		// we found a header to activate, just delegate to the event handler
+		if ( active ) {
+			if ( active !== this.active[ 0 ] ) {
+				this._eventHandler({
+					target: active,
+					currentTarget: active,
+					preventDefault: $.noop
+				});
+			}
+			return;
+		}
+
+		// no header to activate, check if we can collapse
+		if ( !this.options.collapsible ) {
+			return;
+		}
+
+		this.active
+			.removeClass( "ui-state-active ui-corner-top" )
+			.addClass( "ui-state-default ui-corner-all" )
+			.children( ".ui-icon" )
+				.removeClass( this.options.icons.activeHeader )
+				.addClass( this.options.icons.header );
+		this.active.next().addClass( "ui-accordion-content-active" );
+		var toHide = this.active.next(),
+			data = {
+				options: this.options,
+				newHeader: $( [] ),
+				oldHeader: this.active,
+				newContent: $( [] ),
+				oldContent: toHide
+			},
+			toShow = ( this.active = $( [] ) );
+		this._toggle( toShow, toHide, data );
 	},
 
+	// TODO: add tests/docs for negative values in 2.0 (#6854)
 	_findActive: function( selector ) {
-		return selector
-			? typeof selector === "number"
-				? this.headers.filter( ":eq(" + selector + ")" )
-				: this.headers.not( this.headers.not( selector ) )
-			: selector === false
-				? $( [] )
-				: this.headers.filter( ":eq(0)" );
+		return typeof selector === "number" ? this.headers.eq( selector ) : $( [] );
 	},
 
-	// TODO isn't event.target enough? why the separate target argument?
-	_clickHandler: function( event, target ) {
-		var options = this.options;
+	_eventHandler: function( event ) {
+		var options = this.options,
+			clicked = $( event.currentTarget ),
+			clickedIsActive = clicked[0] === this.active[0];
+
+		event.preventDefault();
+
 		if ( options.disabled ) {
 			return;
 		}
-
-		// called only when using activate(false) to close all parts programmatically
-		if ( !event.target ) {
-			if ( !options.collapsible ) {
-				return;
-			}
-			this.active
-				.removeClass( "ui-state-active ui-corner-top" )
-				.addClass( "ui-state-default ui-corner-all" )
-				.children( ".ui-icon" )
-					.removeClass( options.icons.activeHeader )
-					.addClass( options.icons.header );
-			this.active.next().addClass( "ui-accordion-content-active" );
-			var toHide = this.active.next(),
-				data = {
-					options: options,
-					newHeader: $( [] ),
-					oldHeader: options.active,
-					newContent: $( [] ),
-					oldContent: toHide
-				},
-				toShow = ( this.active = $( [] ) );
-			this._toggle( toShow, toHide, data );
-			return;
-		}
-
-		// get the click target
-		var clicked = $( event.currentTarget || target ),
-			clickedIsActive = clicked[0] === this.active[0];
-
-		// TODO the option is changed, is that correct?
-		// TODO if it is correct, shouldn't that happen after determining that the click is valid?
-		options.active = options.collapsible && clickedIsActive ?
-			false :
-			this.headers.index( clicked );
 
 		// if animations are still active, or the active header is the target, ignore click
 		if ( this.running || ( !options.collapsible && clickedIsActive ) ) {
 			return;
 		}
+
+		options.active = options.collapsible && clickedIsActive ?
+			false :
+			this.headers.index( clicked );
 
 		// find elements to show and hide
 		var active = this.active,
@@ -375,8 +368,6 @@ $.widget( "ui.accordion", {
 				.next()
 				.addClass( "ui-accordion-content-active" );
 		}
-
-		return;
 	},
 
 	_toggle: function( toShow, toHide, data, clickedIsActive, down ) {
@@ -496,7 +487,9 @@ $.widget( "ui.accordion", {
 		// other classes are removed before the animation; this one needs to stay until completed
 		this.toHide.removeClass( "ui-accordion-content-active" );
 		// Work around for rendering bug in IE (#5421)
-		this.toHide.parent()[0].className = this.toHide.parent()[0].className;
+		if ( this.toHide.length ) {
+			this.toHide.parent()[0].className = this.toHide.parent()[0].className;
+		}
 
 		this._trigger( "change", null, this.data );
 	}
@@ -682,6 +675,25 @@ $.extend( $.ui.accordion, {
 		this.options.icons.activeHeader = this.options.icons.activeHeader ||
 			this.options.icons.headerSelected;
 		_createIcons.call( this );
+	};
+}( jQuery, jQuery.ui.accordion.prototype ) );
+
+// expanded active option, activate method
+(function( $, prototype ) {
+	prototype.activate = prototype._activate;
+
+	var _findActive = prototype._findActive;
+	prototype._findActive = function( index ) {
+		if ( index === -1 ) {
+			index = false;
+		}
+		if ( index && typeof index !== "number" ) {
+			index = this.headers.index( this.headers.filter( index ) );
+			if ( index === -1 ) {
+				index = false;
+			}
+		}
+		return _findActive.call( this, index );
 	};
 }( jQuery, jQuery.ui.accordion.prototype ) );
 
