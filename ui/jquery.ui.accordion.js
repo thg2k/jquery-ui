@@ -80,7 +80,7 @@ $.widget( "ui.accordion", {
 		self.active.next().addClass( "ui-accordion-content-active" );
 
 		self._createIcons();
-		self.resize();
+		self.refresh();
 		
 		// ARIA
 		self.element.attr( "role", "tablist" );
@@ -123,14 +123,14 @@ $.widget( "ui.accordion", {
 	},
 
 	_createIcons: function() {
-		var options = this.options;
-		if ( options.icons ) {
-			$( "<span></span>" )
-				.addClass( "ui-icon " + options.icons.header )
+		var icons = this.options.icons;
+		if ( icons ) {
+			$( "<span>" )
+				.addClass( "ui-icon " + icons.header )
 				.prependTo( this.headers );
 			this.active.children( ".ui-icon" )
-				.toggleClass(options.icons.header)
-				.toggleClass(options.icons.activeHeader);
+				.removeClass( icons.header )
+				.addClass( icons.activeHeader );
 			this.element.addClass( "ui-accordion-icons" );
 		}
 	},
@@ -140,7 +140,7 @@ $.widget( "ui.accordion", {
 		this.element.removeClass( "ui-accordion-icons" );
 	},
 
-	destroy: function() {
+	_destroy: function() {
 		var options = this.options;
 
 		this.element
@@ -164,8 +164,6 @@ $.widget( "ui.accordion", {
 		if ( options.heightStyle !== "content" ) {
 			contents.css( "height", "" );
 		}
-
-		return $.Widget.prototype.destroy.call( this );
 	},
 
 	_setOption: function( key, value ) {
@@ -223,7 +221,7 @@ $.widget( "ui.accordion", {
 		}
 	},
 
-	resize: function() {
+	refresh: function() {
 		var options = this.options,
 			maxHeight;
 
@@ -499,16 +497,34 @@ $.extend( $.ui.accordion, {
 	version: "@VERSION",
 	animations: {
 		slide: function( options, additions ) {
+			var overflow = options.toShow.css( "overflow" ),
+				percentDone = 0,
+				showProps = {},
+				hideProps = {},
+				fxAttrs = [ "height", "paddingTop", "paddingBottom" ],
+				originalWidth;
 			options = $.extend({
 				easing: "swing",
 				duration: 300
 			}, options, additions );
 			if ( !options.toHide.size() ) {
-				options.toShow.animate({
-					height: "show",
-					paddingTop: "show",
-					paddingBottom: "show"
-				}, options );
+				originalWidth = options.toShow[0].style.width;
+				options.toShow
+					.show()
+					.width( options.toShow.width() )
+					.hide()
+					.animate({
+						height: "show",
+						paddingTop: "show",
+						paddingBottom: "show"
+					}, {
+						duration: options.duration,
+						easing: options.easing,
+						complete: function() {
+							options.toShow.width( originalWidth );
+							options.complete();
+						}
+					});
 				return;
 			}
 			if ( !options.toShow.size() ) {
@@ -519,12 +535,6 @@ $.extend( $.ui.accordion, {
 				}, options );
 				return;
 			}
-			var overflow = options.toShow.css( "overflow" ),
-				percentDone = 0,
-				showProps = {},
-				hideProps = {},
-				fxAttrs = [ "height", "paddingTop", "paddingBottom" ],
-				originalWidth;
 			// fix width before calculating height of hidden element
 			var s = options.toShow;
 			originalWidth = s[0].style.width;
@@ -696,5 +706,8 @@ $.extend( $.ui.accordion, {
 		return _findActive.call( this, index );
 	};
 }( jQuery, jQuery.ui.accordion.prototype ) );
+
+// resize method
+jQuery.ui.accordion.prototype.resize = jQuery.ui.accordion.prototype.refresh;
 
 })( jQuery );
