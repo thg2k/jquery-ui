@@ -691,6 +691,7 @@ $.extend( $.ui.dialog.overlay, {
 			return event + ".dialog-overlay";
 		}
 	).join( " " ),
+
 	create: function( dialog ) {
 		if ( this.instances.length === 0 ) {
 			// prevent use of anchors and inputs
@@ -755,6 +756,7 @@ $.extend( $.ui.dialog.overlay, {
 		$.each( this.instances, function() {
 			maxZ = Math.max( maxZ, this.css( "z-index" ) );
 		});
+
 		this.maxZ = maxZ;
 	},
 
