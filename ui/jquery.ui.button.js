@@ -17,6 +17,7 @@ var lastActive,
 	baseClasses = "ui-button ui-widget ui-state-default ui-corner-all",
 	stateClasses = "ui-state-hover ui-state-active ",
 	typeClasses = "ui-button-icons-only ui-button-icon-only ui-button-text-icons ui-button-text-icon-primary ui-button-text-icon-secondary ui-button-text-only",
+    // common reset handler for all buttons
 	formResetHandler = function( event ) {
 		$( ":ui-button", event.target.form ).each(function() {
 			var inst = $( this ).data( "button" );
@@ -53,6 +54,7 @@ $.widget( "ui.button", {
 		}
 	},
 	_create: function() {
+		// auto-rebind the form reset handler
 		this.element.closest( "form" )
 			.unbind( "reset.button" )
 			.bind( "reset.button", formResetHandler );
@@ -180,6 +182,7 @@ $.widget( "ui.button", {
 		this._setOption( "disabled", options.disabled );
 	},
 
+	// sets this.type according to the type of this.element
 	_determineButtonType: function() {
 		if ( this.element.is(":checkbox") ) {
 			this.type = "checkbox";
@@ -194,6 +197,7 @@ $.widget( "ui.button", {
 		if ( this.type === "checkbox" || this.type === "radio" ) {
 			// we don't search against the document in case the element
 			// is disconnected from the DOM
+			// FIXME: what happens in case of <label><input type="radio" /></label> ??
 			this.buttonElement = this.element.parents().last()
 				.find( "label[for=" + this.element.attr("id") + "]" );
 			this.element.addClass( "ui-helper-hidden-accessible" );

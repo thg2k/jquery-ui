@@ -1,7 +1,7 @@
 /*!
  * jQuery UI Widget @VERSION
  *
- * Copyright 2011, AUTHORS.txt (http://jqueryui.com/about)
+ * Copyright 2010, AUTHORS.txt (http://jqueryui.com/about)
  * Dual licensed under the MIT or GPL Version 2 licenses.
  * http://jquery.org/license
  *
@@ -9,15 +9,30 @@
  */
 (function( $, undefined ) {
 
-var slice = Array.prototype.slice;
-
-var _cleanData = $.cleanData;
-$.cleanData = function( elems ) {
-	for ( var i = 0, elem; (elem = elems[i]) != null; i++ ) {
-		$( elem ).triggerHandler( "remove" );
-	}
-	_cleanData( elems );
-};
+// jQuery 1.4+
+if ( $.cleanData ) {
+	var _cleanData = $.cleanData;
+	$.cleanData = function( elems ) {
+		for ( var i = 0, elem; (elem = elems[i]) != null; i++ ) {
+			$( elem ).triggerHandler( "remove" );
+		}
+		_cleanData( elems );
+	};
+} else {
+	var _remove = $.fn.remove;
+	$.fn.remove = function( selector, keepData ) {
+		return this.each(function() {
+			if ( !keepData ) {
+				if ( !selector || $.filter( selector, [ this ] ).length ) {
+					$( "*", this ).add( [ this ] ).each(function() {
+						$( this ).triggerHandler( "remove" );
+					});
+				}
+			}
+			return _remove.call( $(this), selector, keepData );
+		});
+	};
+}
 
 $.widget = function( name, base, prototype ) {
 	var namespace = name.split( "." )[ 0 ],
@@ -47,13 +62,17 @@ $.widget = function( name, base, prototype ) {
 	// we need to make the options hash a property directly on the new instance
 	// otherwise we'll modify the options hash on the prototype that we're
 	// inheriting from
+//	$.each( basePrototype, function( key, val ) {
+//		if ( $.isPlainObject(val) ) {
+//			basePrototype[ key ] = $.extend( {}, val );
+//		}
+//	});
 	basePrototype.options = $.extend( true, {}, basePrototype.options );
 	$[ namespace ][ name ].prototype = $.extend( true, basePrototype, {
 		namespace: namespace,
 		widgetName: name,
-		widgetEventPrefix: name,
-		widgetBaseClass: fullName,
-		base: base.prototype
+		widgetEventPrefix: $[ namespace ][ name ].prototype.widgetEventPrefix || name,
+		widgetBaseClass: fullName
 	}, prototype );
 
 	$.widget.bridge( name, $[ namespace ][ name ] );
@@ -62,7 +81,7 @@ $.widget = function( name, base, prototype ) {
 $.widget.bridge = function( name, object ) {
 	$.fn[ name ] = function( options ) {
 		var isMethodCall = typeof options === "string",
-			args = slice.call( arguments, 1 ),
+			args = Array.prototype.slice.call( arguments, 1 ),
 			returnValue = this;
 
 		// allow multiple hashes to be passed on init
@@ -77,15 +96,19 @@ $.widget.bridge = function( name, object ) {
 
 		if ( isMethodCall ) {
 			this.each(function() {
-				var instance = $.data( this, name );
-				if ( !instance ) {
-					return $.error( "cannot call methods on " + name + " prior to initialization; " +
-						"attempted to call method '" + options + "'" );
-				}
-				if ( !$.isFunction( instance[options] ) ) {
-					return $.error( "no such method '" + options + "' for " + name + " widget instance" );
-				}
-				var methodValue = instance[ options ].apply( instance, args );
+				var instance = $.data( this, name ),
+					methodValue = instance && $.isFunction( instance[options] ) ?
+						instance[ options ].apply( instance, args ) :
+						instance;
+				// TODO: add this back in 1.9 and use $.error() (see #5972)
+//				if ( !instance ) {
+//					throw "cannot call methods on " + name + " prior to initialization; " +
+//						"attempted to call method '" + options + "'";
+//				}
+//				if ( !$.isFunction( instance[options] ) ) {
+//					throw "no such method '" + options + "' for " + name + " widget instance";
+//				}
+//				var methodValue = instance[ options ].apply( instance, args );
 				if ( methodValue !== instance && methodValue !== undefined ) {
 					returnValue = methodValue;
 					return false;
@@ -114,15 +137,11 @@ $.Widget = function( options, element ) {
 };
 
 $.Widget.prototype = {
-
 	widgetName: "widget",
-
 	widgetEventPrefix: "",
-
 	options: {
 		disabled: false
 	},
-
 	_createWidget: function( options, element ) {
 		// $.widget.bridge stores the plugin instance, but we do it anyway
 		// so that it's stored even before the _create function runs
@@ -142,25 +161,13 @@ $.Widget.prototype = {
 		this._trigger( "create" );
 		this._init();
 	},
-
 	_getCreateOptions: function() {
 		return $.metadata && $.metadata.get( this.element[0] )[ this.widgetName ];
 	},
-
-	_create: $.noop,
-
-	_init: $.noop,
-
-	_super: function( method ) {
-		return this.base[ method ].apply( this, slice.call( arguments, 1 ) );
-	},
-
-	_superApply: function( method, args ) {
-		return this.base[ method ].apply( this, args );
-	},
+	_create: function() {},
+	_init: function() {},
 
 	destroy: function() {
-		this._destroy();
 		this.element
 			.unbind( "." + this.widgetName )
 			.removeData( this.widgetName );
@@ -171,7 +178,6 @@ $.Widget.prototype = {
 				this.widgetBaseClass + "-disabled " +
 				"ui-state-disabled" );
 	},
-	_destroy: $.noop,
 
 	widget: function() {
 		return this.element;
@@ -185,7 +191,7 @@ $.Widget.prototype = {
 			return $.extend( {}, this.options );
 		}
 
-		if ( typeof key === "string" ) {
+		if  (typeof key === "string" ) {
 			if ( value === undefined ) {
 				return this.options[ key ];
 			}
@@ -205,13 +211,14 @@ $.Widget.prototype = {
 
 		return this;
 	},
-
 	_setOption: function( key, value ) {
 		this.options[ key ] = value;
 
 		if ( key === "disabled" ) {
 			this.widget()
-				.toggleClass( this.widgetBaseClass + "-disabled ui-state-disabled", !!value )
+				[ value ? "addClass" : "removeClass"](
+					this.widgetBaseClass + "-disabled" + " " +
+					"ui-state-disabled" )
 				.attr( "aria-disabled", value );
 		}
 
@@ -221,7 +228,6 @@ $.Widget.prototype = {
 	enable: function() {
 		return this._setOption( "disabled", false );
 	},
-
 	disable: function() {
 		return this._setOption( "disabled", true );
 	},
@@ -248,7 +254,7 @@ $.Widget.prototype = {
 		this.element.trigger( event, data );
 
 		return !( $.isFunction(callback) &&
-			(callback.call( this.element[0], event, data ) === false) ||
+			callback.call( this.element[0], event, data ) === false ||
 			event.isDefaultPrevented() );
 	}
 };
