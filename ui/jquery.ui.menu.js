@@ -1,7 +1,7 @@
 /*
  * jQuery UI Menu @VERSION
  * 
- * Copyright 2010, AUTHORS.txt (http://jqueryui.com/about)
+ * Copyright 2011, AUTHORS.txt (http://jqueryui.com/about)
  * Dual licensed under the MIT or GPL Version 2 licenses.
  * http://jquery.org/license
  *
@@ -93,9 +93,7 @@ $.widget("ui.menu", {
 		});
 	},
 	
-	destroy: function() {
-		$.Widget.prototype.destroy.apply( this, arguments );
-		
+	_destroy: function() {
 		this.element
 			.removeClass( "ui-menu ui-widget ui-widget-content ui-corner-all" )
 			.removeAttr( "tabIndex" )

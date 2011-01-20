@@ -1,7 +1,7 @@
 /*
  * jQuery UI Spinner @VERSION
  *
- * Copyright 2010, AUTHORS.txt (http://jqueryui.com/about)
+ * Copyright 2011, AUTHORS.txt (http://jqueryui.com/about)
  * Dual licensed under the MIT or GPL Version 2 licenses.
  * http://jquery.org/license
  *
@@ -69,6 +69,7 @@ $.widget('ui.spinner', {
 				});
 
 		this.element
+			.attr( "role", "spinbutton" )
 			.bind('keydown.spinner', function(event) {
 				if (self.options.disabled) {
 					return;
@@ -198,7 +199,7 @@ $.widget('ui.spinner', {
 	},
 	
 	_uiSpinnerHtml: function() {
-		return '<span role="spinbutton" class="ui-spinner ui-state-default ui-widget ui-widget-content ui-corner-all"></span>';
+		return '<span class="ui-spinner ui-state-default ui-widget ui-widget-content ui-corner-all"></span>';
 	},
 	
 	_buttonHtml: function() {
@@ -283,11 +284,11 @@ $.widget('ui.spinner', {
 				this.buttons.button("enable");
 			}
 		}
-		$.Widget.prototype._setOption.call( this, key, value );
+		this._super( "_setOption", key, value );
 	},
 	
 	_setOptions: function( options ) {
-		$.Widget.prototype._setOptions.call( this, options );
+		this._super( "_setOptions", options );
 		if ( "value" in options ) {
 			this._format( this.options.value );
 		}
@@ -304,28 +305,26 @@ $.widget('ui.spinner', {
 	_parse: function(val) {
 		var input = val;
 		if (typeof val == 'string') {
-			// special case for currency formatting until Globalization handles currencies
-			if (this.options.numberformat == "C" && window.Globalization) {
-				// parseFloat should accept number format, including currency
-				var culture = Globalization.culture || Globalization.cultures['default'];
-				val = val.replace(culture.numberFormat.currency.symbol, "");
-			}
-			val = window.Globalization && this.options.numberformat ? Globalization.parseFloat(val) : +val;
+			val = $.global && this.options.numberformat ? $.global.parseFloat(val) : +val;
 		}
 		return isNaN(val) ? null : val;
 	},
 	
 	_format: function(num) {
 		var num = this.options.value;
-		this.element.val( window.Globalization && this.options.numberformat ? Globalization.format(num, this.options.numberformat) : num );
+		this.element.val( $.global && this.options.numberformat ? $.global.format(num, this.options.numberformat) : num );
 	},
 		
 	destroy: function() {
 		this.element
 			.removeClass('ui-spinner-input')
 			.removeAttr('disabled')
-			.removeAttr('autocomplete');
-		$.Widget.prototype.destroy.call( this );
+			.removeAttr('autocomplete')
+			.removeAttr('role')
+			.removeAttr('aria-valuemin')
+			.removeAttr('aria-valuemax')
+			.removeAttr('aria-valuenow');
+		this._super( "destroy" );
 		this.uiSpinner.replaceWith(this.element);
 	},
 	

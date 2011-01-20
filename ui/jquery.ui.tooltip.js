@@ -1,7 +1,7 @@
 /*
  * jQuery UI Tooltip @VERSION
  *
- * Copyright 2010, AUTHORS.txt (http://jqueryui.com/about)
+ * Copyright 2011, AUTHORS.txt (http://jqueryui.com/about)
  * Dual licensed under the MIT or GPL Version 2 licenses.
  * http://jquery.org/license
  *
@@ -58,9 +58,8 @@ $.widget("ui.tooltip", {
 		this.options.disabled = true;
 	},
 	
-	destroy: function() {
+	_destroy: function() {
 		this.tooltip.remove();
-		$.Widget.prototype.destroy.apply(this, arguments);
 	},
 	
 	widget: function() {

@@ -1,7 +1,7 @@
 /*
  * jQuery UI Dialog @VERSION
  *
- * Copyright 2010, AUTHORS.txt (http://jqueryui.com/about)
+ * Copyright 2011, AUTHORS.txt (http://jqueryui.com/about)
  * Dual licensed under the MIT or GPL Version 2 licenses.
  * http://jquery.org/license
  *
@@ -179,7 +179,7 @@ $.widget("ui.dialog", {
 		}
 	},
 
-	destroy: function() {
+	_destroy: function() {
 		var self = this;
 		
 		if ( self.overlay ) {
@@ -195,9 +195,6 @@ $.widget("ui.dialog", {
 		if ( self.originalTitle ) {
 			self.element.attr( "title", self.originalTitle );
 		}
-
-		$.Widget.prototype.destroy.call( this );
-		return self;
 	},
 
 	widget: function() {
@@ -603,7 +600,7 @@ $.widget("ui.dialog", {
 				break;
 		}
 
-		$.Widget.prototype._setOption.apply( self, arguments );
+		this._super( "_setOption", key, value );
 	},
 
 	_size: function() {
