@@ -97,7 +97,7 @@ $.widget("ui.dialog", {
 				// TODO: move to stylesheet
 				.css( "outline", 0 )
 				.keydown(function( event ) {
-					if ( options.closeOnEscape && event.keyCode &&
+					if ( options.closeOnEscape && !event.isDefaultPrevented() && event.keyCode &&
 							event.keyCode === $.ui.keyCode.ESCAPE ) {
 						self.close( event );
 						event.preventDefault();
@@ -125,20 +125,6 @@ $.widget("ui.dialog", {
 			uiDialogTitlebarClose = $( "<a href='#'></a>" )
 				.addClass( "ui-dialog-titlebar-close  ui-corner-all" )
 				.attr( "role", "button" )
-				.hover(
-					function() {
-						uiDialogTitlebarClose.addClass( "ui-state-hover" );
-					},
-					function() {
-						uiDialogTitlebarClose.removeClass( "ui-state-hover" );
-					}
-				)
-				.focus(function() {
-					uiDialogTitlebarClose.addClass( "ui-state-focus" );
-				})
-				.blur(function() {
-					uiDialogTitlebarClose.removeClass( "ui-state-focus" );
-				})
 				.click(function( event ) {
 					event.preventDefault();
 					self.close( event );
@@ -157,6 +143,8 @@ $.widget("ui.dialog", {
 				.prependTo( uiDialogTitlebar );
 
 		uiDialogTitlebar.find( "*" ).add( uiDialogTitlebar ).disableSelection();
+		this._hoverable( uiDialogTitlebarClose );
+		this._focusable( uiDialogTitlebarClose );
 
 		if ( options.draggable && $.fn.draggable ) {
 			self._makeDraggable();
@@ -365,7 +353,10 @@ $.widget("ui.dialog", {
 					button.button();
 				}
 			});
+			self.uiDialog.addClass( "ui-dialog-buttons" );
 			uiDialogButtonPane.appendTo( self.uiDialog );
+		} else {
+			self.uiDialog.removeClass( "ui-dialog-buttons" );
 		}
 	},
 
@@ -709,7 +700,7 @@ $.extend( $.ui.dialog.overlay, {
 
 			// allow closing by pressing the escape key
 			$( document ).bind( "keydown.dialog-overlay", function( event ) {
-				if ( dialog.options.closeOnEscape && event.keyCode &&
+				if ( dialog.options.closeOnEscape && !event.isDefaultPrevented() && event.keyCode &&
 					event.keyCode === $.ui.keyCode.ESCAPE ) {
 					
 					dialog.close( event );
