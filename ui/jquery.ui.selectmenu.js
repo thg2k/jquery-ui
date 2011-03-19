@@ -17,6 +17,7 @@ $.widget("ui.selectmenu", {
 	eventPrefix: "selectmenu",
 	options: {
 		transferClasses: true,
+		typeAhead: "sequential",
 		style: 'dropdown',
 		positionOptions: {
 			my: "left top",
@@ -44,6 +45,9 @@ $.widget("ui.selectmenu", {
 
 		// define safe mouseup for future toggling
 		this._safemouseup = true;
+		
+		// FIXME temp workaround for IE
+		if ($.browser.msie) o.typeAhead = "";
 
 		// create menu button wrapper
 		this.newelement = $('<a class="' + this.widgetBaseClass + ' ui-widget ui-state-default ui-corner-all" id="' + this.ids[0] + '" role="button" href="#" tabindex="0" aria-haspopup="true" aria-owns="' + this.ids[1] + '"></a>')
@@ -67,7 +71,6 @@ $.widget("ui.selectmenu", {
 		this.newelement.prepend('<span class="' + self.widgetBaseClass + '-status" />');
 			
 		// make associated form label trigger focus
-		// FIXME: and what happens if this element has no id set?
 		$('label[for="' + this.element.attr('id') + '"]')
 			.attr('for', this.ids[0])
 			.bind('click.selectmenu', function() {
@@ -149,7 +152,7 @@ $.widget("ui.selectmenu", {
 			.bind("click.selectmenu", function() {
 				self._refreshValue();
 			})
-			// newelement can be null under unclear circumstances in IE8 
+			// FIXME: newelement can be null under unclear circumstances in IE8 
 			.bind("focus.selectmenu", function() {
 				if (this.newelement) {
 					this.newelement[0].focus();
@@ -157,7 +160,6 @@ $.widget("ui.selectmenu", {
 			});
 
 		// original selectmenu width
-		// FIXME: there should be a + 12 here for reserving space for the arrow
 		var selectWidth = this.element.width();
 
 		// set menu button width
@@ -220,16 +222,15 @@ $.widget("ui.selectmenu", {
 						self.close(event, true);
 						break;
 					default:
-						ret = true;
+						ret = true;	
+						self._typeAhead(event.keyCode,'focus');					
 						break;	
 				}
 				return ret;
 			});			
 		
 		// needed when window is resized
-		$(window).bind("resize.selectmenu", function() {
-			$.proxy(self._refreshPosition, this);
-		});
+		$(window).bind( "resize.selectmenu", $.proxy( self._refreshPosition, this ) );
 	},
 
 	_init: function() {
@@ -245,6 +246,7 @@ $.widget("ui.selectmenu", {
 					text: self._formatText($(this).text()),
 					selected: $(this).attr('selected'),
 					classes: $(this).attr('class'),
+					typeahead: $(this).attr('typeahead'),
 					parentOptGroup: $(this).parent('optgroup').attr('label'),
 					bgImage: o.bgImage.call($(this))
 				});
@@ -258,7 +260,7 @@ $.widget("ui.selectmenu", {
 
 		// write li's
 		for (var i = 0; i < selectOptionData.length; i++) {
-			var thisLi = $('<li role="presentation"><a href="#" tabindex="-1" role="option" aria-selected="false">' + selectOptionData[i].text + '</a></li>')
+					var thisLi = $('<li role="presentation"><a href="#" tabindex="-1" role="option" aria-selected="false"'+ (selectOptionData[i].typeahead ? ' typeahead="' + selectOptionData[i].typeahead + '"' : '' ) + '>'+ selectOptionData[i].text +'</a></li>')
 				.data('index', i)
 				.addClass(selectOptionData[i].classes)
 				.data('optionClasses', selectOptionData[i].classes || '')
@@ -377,7 +379,7 @@ $.widget("ui.selectmenu", {
 		this._optionLis = this.list.find('li:not(.' + self.widgetBaseClass + '-group)');
 						
 		// transfer disabled state
-		if (this.element.attr('disabled') == true) {
+		if (this.element.attr('disabled') === true) {
 			this.disable();
 		}
 
@@ -417,37 +419,70 @@ $.widget("ui.selectmenu", {
 		$.Widget.prototype.destroy.apply(this, arguments);
 	},
 
-	_typeAhead: function(code, eventType) {
-		var self = this;
-		//define self._prevChar if needed
-		if (!self._prevChar) {
-			self._prevChar = [ '', 0 ];
-		}
-		var C = String.fromCharCode(code);
+	_typeAhead: function(code, eventType){
+		var self = this, focusFound = false, C = String.fromCharCode(code);
 		c = C.toLowerCase();
-		var focusFound = false;
-		function focusOpt(elem, ind) {
-			focusFound = true;
-			$(elem).trigger(eventType);
-			self._prevChar[1] = ind;
-		}
-		this.list.find('li a').each(function(i) {
-			if (!focusFound) {
-				var thisText = $(this).text();
-				if ( thisText.indexOf(C) == 0 || thisText.indexOf(c) == 0 ) {
-					if (self._prevChar[0] == C) {
-						if (self._prevChar[1] < i) {
-							focusOpt(this, i);
-						}
-					} else {
-						focusOpt(this, i);
+
+		if (self.options.typeAhead == 'sequential') {
+			// clear the timeout so we can use _prevChar
+			window.clearTimeout('ui.selectmenu-' + self.selectmenuId);
+
+			// define our find var
+			var find = typeof(self._prevChar) == 'undefined' ? '' : self._prevChar.join('');
+			
+			function focusOptSeq(elem, ind, c){
+				focusFound = true;
+				$(elem).trigger(eventType);
+				typeof(self._prevChar) == 'undefined' ? self._prevChar = [c] : self._prevChar[self._prevChar.length] = c;
+			}
+			this.list.find('li a').each(function(i) {	
+				if (!focusFound) {
+					// allow the typeahead attribute on the option tag for a more specific lookup
+					var thisText = $(this).attr('typeahead') || $(this).text();
+					if (thisText.indexOf(find+C) == 0) {
+						focusOptSeq(this,i, C)
+					} else if (thisText.indexOf(find+c) == 0) {
+						focusOptSeq(this,i,c)
 					}
 				}
+			});
+			
+			// if we didnt find it clear the prevChar
+			if (!focusFound) {
+				//self._prevChar = undefined
 			}
-		});
-		this._prevChar[0] = C;
-	},
 
+			// set a 1 second timeout for sequenctial typeahead
+			//  	keep this set even if we have no matches so it doesnt typeahead somewhere else
+			window.setTimeout(function(el) {
+				el._prevChar = undefined;
+			}, 1000, self);
+
+		} else {
+			//define self._prevChar if needed
+			if (!self._prevChar){ self._prevChar = ['',0]; }
+
+			var focusFound = false;
+			function focusOpt(elem, ind){
+				focusFound = true;
+				$(elem).trigger(eventType);
+				self._prevChar[1] = ind;
+			}
+			this.list.find('li a').each(function(i){	
+				if(!focusFound){
+					var thisText = $(this).text();
+					if( thisText.indexOf(C) == 0 || thisText.indexOf(c) == 0){
+							if(self._prevChar[0] == C){
+								if(self._prevChar[1] < i){ focusOpt(this,i); }	
+							}
+							else{ focusOpt(this,i); }	
+					}
+				}
+			});
+			this._prevChar[0] = C;
+		}
+	},
+	
 	// returns some usefull information, called by callbacks only
 	_uiHash: function() {
 		var index = this.index();
@@ -460,9 +495,9 @@ $.widget("ui.selectmenu", {
 
 	open: function(event) {
 		var self = this;
-		var disabledStatus = this.newelement.attr("aria-disabled");
-		if ( disabledStatus != 'true' ) {
-			this._refreshPosition();
+		if ( this.newelement.attr("aria-disabled") != 'true' ) {
+			// TODO: seems to be useless
+			// this._refreshPosition();
 			this._closeOthers(event);
 			this.newelement
 				.addClass('ui-state-active');
@@ -579,11 +614,10 @@ $.widget("ui.selectmenu", {
 			this.close();
 			this.element
 				.add(this.newelement)
-				.add(this.list)
-					[value ? 'addClass' : 'removeClass'](
-						this.widgetBaseClass + '-disabled' + ' ' +
-						this.namespace + '-state-disabled')
-					.attr("aria-disabled", value);
+				.add(this.list)[value ? 'addClass' : 'removeClass'](
+					this.widgetBaseClass + '-disabled' + ' ' +
+					this.namespace + '-state-disabled')
+				.attr("aria-disabled", value);
 		}
 	},
 
@@ -598,14 +632,8 @@ $.widget("ui.selectmenu", {
 
 	value: function(newValue) {
 		if (arguments.length) {
-			// FIXME test for number is a kind of legacy support, could be removed at any time (Dez. 2010)
-			// see this post for more info: https://github.com/fnagel/jquery-ui/issues#issue/33
-			if (typeof newValue == "number") {
-					this.index(newValue);
-			} else if (typeof newValue == "string") {
-				this.element[0].value = newValue;
-				this._refreshValue();
-			}
+			this.element[0].value = newValue;
+			this._refreshValue();
 		} else {
 			return this.element[0].value;
 		}
