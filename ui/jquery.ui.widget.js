@@ -219,7 +219,7 @@ $.Widget.prototype = {
 			return $.extend( {}, this.options );
 		}
 
-		if  (typeof key === "string" ) {
+		if (typeof key === "string" ) {
 			if ( value === undefined ) {
 				return this.options[ key ];
 			}
