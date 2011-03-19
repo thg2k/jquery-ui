@@ -372,6 +372,12 @@ $.widget("ui.dialog", {
 		}
 		if (hasButtons) {
 			$.each(buttons, function(name, props) {
+				/* === begin of local customization === */
+				/* pre-filter the name for localization */
+				if ((name.substr(0, 4) == "txt_") && (window[name] !== undefined))
+					name = window[name];
+				/* === end of local customization === */
+
 				props = $.isFunction( props ) ?
 					{ click: props, text: name } :
 					props;
