@@ -96,7 +96,7 @@ $.widget = function( name, base, prototype ) {
 $.widget.bridge = function( name, object ) {
 	$.fn[ name ] = function( options ) {
 		var isMethodCall = typeof options === "string",
-			args = Array.prototype.slice.call( arguments, 1 ),
+			args = slice.call( arguments, 1 ),
 			returnValue = this;
 
 		// allow multiple hashes to be passed on init
@@ -155,6 +155,7 @@ $.Widget.prototype = {
 	options: {
 		disabled: false
 	},
+
 	_createWidget: function( options, element ) {
 		element = $( element || this.defaultElement || this )[ 0 ];
 		this.element = $( element );
@@ -204,6 +205,8 @@ $.Widget.prototype = {
 		this.focusable.removeClass( "ui-state-focus" );
 	},
 
+	_destroy: $.noop,
+
 	widget: function() {
 		return this.element;
 	},
@@ -243,9 +246,7 @@ $.Widget.prototype = {
 
 		if ( key === "disabled" ) {
 			this.widget()
-				[ value ? "addClass" : "removeClass"](
-					this.widgetBaseClass + "-disabled" + " " +
-					"ui-state-disabled" )
+				.toggleClass( this.widgetBaseClass + "-disabled ui-state-disabled", !!value )
 				.attr( "aria-disabled", value );
 			this.hoverable.removeClass( "ui-state-hover" );
 			this.focusable.removeClass( "ui-state-focus" );
@@ -257,6 +258,7 @@ $.Widget.prototype = {
 	enable: function() {
 		return this._setOption( "disabled", false );
 	},
+
 	disable: function() {
 		return this._setOption( "disabled", true );
 	},
