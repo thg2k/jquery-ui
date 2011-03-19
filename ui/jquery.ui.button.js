@@ -17,7 +17,7 @@ var lastActive,
 	baseClasses = "ui-button ui-widget ui-state-default ui-corner-all",
 	stateClasses = "ui-state-hover ui-state-active ",
 	typeClasses = "ui-button-icons-only ui-button-icon-only ui-button-text-icons ui-button-text-icon-primary ui-button-text-icon-secondary ui-button-text-only",
-    // common reset handler for all buttons
+	// common reset handler for all buttons
 	formResetHandler = function( event ) {
 		$( ":ui-button", event.target.form ).each(function() {
 			var inst = $( this ).data( "button" );
