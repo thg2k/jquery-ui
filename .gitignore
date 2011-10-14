@@ -5,3 +5,5 @@ docs
 *.diff
 *.patch
 .DS_Store
+*.db
+*.session
