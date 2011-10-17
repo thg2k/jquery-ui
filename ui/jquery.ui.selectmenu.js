@@ -30,15 +30,17 @@ $.widget("ui.selectmenu", {
 		maxHeight: null,
 		icons: null,
 		format: null,
-		bgImage: function() {},
-		wrapperElement: "<div />"
+		bgImage: function() {}
 	},
 
 	_create: function() {
 		var self = this, o = this.options;
 
 		// set a default id value, generate a new random one if not set by developer
-		var selectmenuId = this.element.attr( 'id' ).replace(':', '\\:') || 'ui-selectmenu-' + Math.random().toString( 16 ).slice( 2, 10 );
+		var selectmenuId = this.element.attr( 'id' ) || 'ui-selectmenu-' + Math.random().toString( 16 ).slice( 2, 10 );
+
+		// escape special characters
+		selectmenuId = selectmenuId.replace(':', '\\:');
 
 		// quick array of button and menu id's
 		this.ids = [ selectmenuId, selectmenuId + '-button', selectmenuId + '-menu' ];
@@ -51,15 +53,12 @@ $.widget("ui.selectmenu", {
 			'class': this.widgetBaseClass + ' ui-widget ui-state-default ui-corner-all',
 			'id' : this.ids[ 1 ],
 			'role': 'button',
-			'href': '#nogo',
+			'href': '#',
 			'tabindex': this.element.attr( 'disabled' ) ? 1 : 0,
-			'aria-haspopup': true,
-			'aria-owns': this.ids[ 2 ]
-		});
-		this.newelementWrap = $( o.wrapperElement )
-			.append( this.newelement )
-			.insertAfter( this.element );
-		
+			'aria-haspopup': 'true',
+			'aria-owns': this.ids[ 2 ] })
+			.insertAfter ( this.element );
+
 		// transfer tabindex
 		var tabindex = this.element.attr( 'tabindex' );
 		if ( tabindex ) {
@@ -153,11 +152,13 @@ $.widget("ui.selectmenu", {
 		// document click closes menu
 		$(document).bind("mousedown.selectmenu", function(event) {
 			self.close(event);
+			self._closeOthers(event);
 		});
 
 		// change event on original selectmenu
 		this.element
-			.bind("click.selectmenu", function() {
+			// To me, change event works way better than click, for programmatic changes --thg2k
+			.bind("change.selectmenu", function() {
 				self._refreshValue();
 			})
 			// FIXME: newelement can be null under unclear circumstances in IE8
@@ -169,8 +170,9 @@ $.widget("ui.selectmenu", {
 			});
 
 		// set width when not set via options
-		if (!o.width) {
-			o.width = this.element.outerWidth();
+		if ( ! o.width ) {
+			// I don't know why, but I need to save some extra space here --thg
+			o.width = this.element.outerWidth() + 12;
 		}
 		// set menu button width
 		this.newelement.width(o.width);
@@ -179,18 +181,14 @@ $.widget("ui.selectmenu", {
 		this.element.hide();
 
 		// create menu portion, append to body		
-		this.list = $( '<ul />', {
-			'class': 'ui-widget ui-widget-content',
+		this.list = $( '<ul/>', {
+			'class': self.widgetBaseClass + '-menu ui-widget ui-widget-content',
 			'aria-hidden': true,
 			'role': 'listbox',
 			'aria-labelledby': this.ids[1],
 			'id': this.ids[2]
-		});
-		this.listWrap = $( o.wrapperElement )
-			.addClass( self.widgetBaseClass + '-menu' )
-			.append( this.list )
-			.appendTo( 'body' );
-		
+		}).appendTo( 'body' );
+
 		// transfer menu click to menu button
 		this.list
 			.bind("keydown.selectmenu", function(event) {
@@ -408,7 +406,7 @@ $.widget("ui.selectmenu", {
 
 		// reset height to auto
 		this.list.css( 'height', 'auto' );
-		var listH = this.listWrap.height();
+		var listH = this.list.height();
 		// calculate default max height
 		if ( o.maxHeight && o.maxHeight < listH ) {
 			this.list.height( o.maxHeight );
@@ -442,7 +440,7 @@ $.widget("ui.selectmenu", {
 			.removeAttr( 'aria-disabled' )
 			.unbind( ".selectmenu" );
 
-		// TODO unneded as event binding has been disabled
+		// TODO unbinding window is unneded as event binding has been disabled
 		// $( window ).unbind( ".selectmenu" );
 		$( document ).unbind( ".selectmenu" );
 
@@ -450,9 +448,9 @@ $.widget("ui.selectmenu", {
 		$( 'label[for=' + this.ids[0] + ']' )
 			.attr( 'for', this.ids[0] )
 			.unbind( '.selectmenu' );
-		
-		this.newelementWrap.remove();
-		this.listWrap.remove();
+
+		this.newelement.remove();
+		this.list.remove();
 		
 		this.element.show();
 
@@ -535,14 +533,14 @@ $.widget("ui.selectmenu", {
 			self._closeOthers(event);
 			self.newelement.addClass('ui-state-active');
 				
-			self.listWrap.appendTo( o.appendTo );
+			self.list.appendTo( 'body' );
 			self.list.attr('aria-hidden', false);
 			
 			if ( o.style == "dropdown" ) {
 				self.newelement.removeClass('ui-corner-all').addClass('ui-corner-top');
 			}
 			
-			self.listWrap.addClass( self.widgetBaseClass + '-open' );
+			self.list.addClass( self.widgetBaseClass + '-open' );
 			// positioning needed for IE7 (tested 01.08.11 on MS VPC Image)
 			// see https://github.com/fnagel/jquery-ui/issues/147
 			if ( $.browser.msie && $.browser.version.substr( 0,1 ) == 7 ) {
@@ -561,8 +559,7 @@ $.widget("ui.selectmenu", {
 		if ( this.newelement.is('.ui-state-active') ) {
 			this.newelement
 				.removeClass('ui-state-active');
-			this.listWrap.removeClass(this.widgetBaseClass + '-open');
-			this.list.attr('aria-hidden', true);
+			this.list.removeClass(this.widgetBaseClass + '-open').attr('aria-hidden', true);
 			if ( this.options.style == "dropdown" ) {
 				this.newelement.removeClass('ui-corner-top').addClass('ui-corner-all');
 			}
@@ -591,7 +588,7 @@ $.widget("ui.selectmenu", {
 	},
 
 	_toggle: function(event, retainFocus) {
-		if ( this.listWrap.is('.' + this.widgetBaseClass + '-open') ) {
+		if ( this.list.is('.' + this.widgetBaseClass + '-open') ) {
 			this.close(event, retainFocus);
 		} else {
 			this.open(event);
@@ -827,9 +824,9 @@ $.widget("ui.selectmenu", {
 		// update zIndex if jQuery UI is able to process
 		var zIndexElement = this.element.zIndex();
 		if ( zIndexElement ) {
-			this.listWrap.css( 'zIndex', zIndexElement );
+			this.list.css( 'zIndex', zIndexElement );
 		}
-		this.listWrap.position({
+		this.list.position({
 			// set options for position plugin
 			of: o.positionOptions.of || this.newelement,
 			my: o.positionOptions.my,
