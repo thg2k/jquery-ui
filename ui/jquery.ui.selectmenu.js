@@ -453,8 +453,10 @@ $.widget("ui.selectmenu", {
 		this.element.show();
 
 		// if there are no other menus left in the page, remove the global handlers
-		$( window ).unbind( ".selectmenu" );
-		$( document ).unbind( ".selectmenu" );
+		if ($('.' + this.widgetBaseClass).length == 0) {
+			$( window ).unbind( ".selectmenu" );
+			$( document ).unbind( ".selectmenu" );
+		}
 
 		// call widget destroy function
 		$.Widget.prototype.destroy.apply(this, arguments);
