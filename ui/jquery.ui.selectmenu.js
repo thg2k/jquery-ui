@@ -33,9 +33,21 @@ $.widget("ui.selectmenu", {
 		bgImage: function() {},
 		wrapperElement: "<div />"
 	},
+	closeAllHandler: function(event) {
+		$('.' + this.widgetBaseClass + '.ui-state-active').each(function() {
+			$(this).data('selectelement').selectmenu('close', event);
+		});
+		$('.' + this.widgetBaseClass + '.ui-state-hover').trigger('mouseout');
+	},
 
 	_create: function() {
 		var self = this, o = this.options;
+
+		// rebind global events
+		$( document ).unbind( ".selectmenu" )
+			.bind( "click.selectmenu", $.proxy(this.closeAllHandler, this) );
+		$( window ).unbind( ".selectmenu" )
+			.bind( "resize.selectmenu", $.proxy(this.closeAllHandler, this) );
 
 		// set a default id value, generate a new random one if not set by developer
 		var selectmenuId = (this.element.attr( 'id' ) || 'ui-selectmenu-' + Math.random().toString( 16 ).slice( 2, 10 )).replace(':', '\\:');
@@ -150,11 +162,6 @@ $.widget("ui.selectmenu", {
 				}
 			});
 
-		// document click closes menu
-		$(document).bind("mousedown.selectmenu-" + this.ids[0], function(event) {
-			self.close(event);
-		});
-
 		// change event on original selectmenu
 		this.element
 			.bind("click.selectmenu", function() {
@@ -252,9 +259,6 @@ $.widget("ui.selectmenu", {
 			})
 			// this allows for using the scrollbar in an overflowed list
 			.bind( 'mousedown.selectmenu mouseup.selectmenu', function() { return false; });
-
-		// needed when window is resized
-		$(window).bind( "resize.selectmenu-" + this.ids[0], $.proxy( self.close, this ) );
 	},
 
 	_init: function() {
@@ -442,9 +446,6 @@ $.widget("ui.selectmenu", {
 			.removeAttr( 'aria-disabled' )
 			.unbind( ".selectmenu" );
 
-		$( window ).unbind( ".selectmenu-" + this.ids[0] );
-		$( document ).unbind( ".selectmenu-" + this.ids[0] );
-
 		// unbind click on label, reset its for attr
 		$( 'label[for=' + this.ids[0] + ']' )
 			.attr( 'for', this.ids[0] )
@@ -454,6 +455,12 @@ $.widget("ui.selectmenu", {
 		this.listWrap.remove();
 		
 		this.element.show();
+
+		// if there are no other menus left in the page, remove the global handlers
+		if ($('.' + this.widgetBaseClass).length == 0) {
+			$( window ).unbind( ".selectmenu" );
+			$( document ).unbind( ".selectmenu" );
+		}
 
 		// call widget destroy function
 		$.Widget.prototype.destroy.apply(this, arguments);
