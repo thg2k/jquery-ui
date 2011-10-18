@@ -224,7 +224,7 @@ $.widget( "ui.textbox", {
 			this._setOption( "disabled", isDisabled );
 		}
 
-		if ( this.autoLabel && $( this ).inputElement.attr("value") == "" ) {
+		if ( this.autoLabel && this.inputElement.attr("value") == "" ) {
 			$( this ).inputElement.attr("value", this.autoLabel);
 		}
 	},
