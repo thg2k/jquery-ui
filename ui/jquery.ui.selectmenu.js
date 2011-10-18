@@ -37,10 +37,9 @@ $.widget("ui.selectmenu", {
 		var self = this, o = this.options;
 
 		// set a default id value, generate a new random one if not set by developer
-		var selectmenuId = this.element.attr( 'id' ) || 'ui-selectmenu-' + Math.random().toString( 16 ).slice( 2, 10 );
-
-		// escape special characters
-		selectmenuId = selectmenuId.replace(':', '\\:');
+		var selectmenuId = (this.element.attr( 'id' ) ||
+			'ui-selectmenu-' + Math.random().toString( 16 ).slice( 2, 10 ))
+			.replace(':', '\\:');
 
 		// quick array of button and menu id's
 		this.ids = [ selectmenuId, selectmenuId + '-button', selectmenuId + '-menu' ];
@@ -150,7 +149,7 @@ $.widget("ui.selectmenu", {
 			});
 
 		// document click closes menu
-		$(document).bind("mousedown.selectmenu", function(event) {
+		$(document).bind("mousedown.selectmenu-" + this.ids[0], function(event) {
 			self.close(event);
 			self._closeOthers(event);
 		});
@@ -252,7 +251,7 @@ $.widget("ui.selectmenu", {
 			.bind( 'mousedown.selectmenu mouseup.selectmenu', function() { return false; });
 
 		// needed when window is resized
-		$(window).bind( "resize.selectmenu", $.proxy( self.close, this ) );
+		$(window).bind( "resize.selectmenu-" + this.ids[0], $.proxy( self.close, this ) );
 	},
 
 	_init: function() {
@@ -440,9 +439,8 @@ $.widget("ui.selectmenu", {
 			.removeAttr( 'aria-disabled' )
 			.unbind( ".selectmenu" );
 
-		// TODO unbinding window is unneded as event binding has been disabled
-		// $( window ).unbind( ".selectmenu" );
-		$( document ).unbind( ".selectmenu" );
+		$( window ).unbind( ".selectmenu-" + this.ids[0] );
+		$( document ).unbind( ".selectmenu-" + this.ids[0] );
 
 		// unbind click on label, reset its for attr
 		$( 'label[for=' + this.ids[0] + ']' )
