@@ -181,11 +181,16 @@ $.widget("ui.selectmenu", {
 
 		// set width when not set via options
 		if ( ! o.width ) {
-			// I don't know why, but I need to save some extra space here --thg
-			o.width = this.element.outerWidth() + 12;
+			// FIXME: there are so many factors which make the original
+			//   element width unrelated to new widget width that this is
+			//   totally wrong. We need a different approach, but for the
+			//   meanwhile, I'm OK with some fixed extra space --thg2k 20oct2011
+			// see https://github.com/fnagel/jquery-ui/issues/183
+			o.width = this.element.outerWidth() + 6;
 		}
+
 		// set menu button width
-		this.newelement.width(o.width);
+		this.newelement.width( o.width );
 
 		// hide original selectmenu element
 		this.element.hide();
@@ -406,13 +411,6 @@ $.widget("ui.selectmenu", {
 			this.newelement.add( this.list ).addClass( transferClasses );
 		}
 
-		// set menu width to either menuWidth option value, width option value, or select width
-		if ( o.style == 'dropdown' ) {
-			this.list.width( o.menuWidth ? o.menuWidth : o.width );
-		} else {
-			this.list.width( o.menuWidth ? o.menuWidth : o.width - o.handleWidth );
-		}
-
 		// reset height to auto
 		this.list.css( 'height', 'auto' );
 		var listH = this.list.height();
@@ -436,11 +434,6 @@ $.widget("ui.selectmenu", {
 		
 		// update value
 		this.index( this._selectedIndex() );
-
-		// needed when selectmenu is placed at the very bottom / top of the page
-		window.setTimeout( function() {
-			self._refreshPosition();
-		}, 200 );
 	},
 
 	destroy: function() {
@@ -559,25 +552,39 @@ $.widget("ui.selectmenu", {
 		if ( self.newelement.attr("aria-disabled") != 'true' ) {
 			self._closeOthers(event);
 			self.newelement.addClass('ui-state-active');
-				
+
+			// FIXME: why do i need this? isn't it already in the body?
 			self.list.appendTo( 'body' );
 			self.list.attr('aria-hidden', false);
 			
 			if ( o.style == "dropdown" ) {
 				self.newelement.removeClass('ui-corner-all').addClass('ui-corner-top');
 			}
-			
-			self.list.addClass( self.widgetBaseClass + '-open' );
-			// positioning needed for IE7 (tested 01.08.11 on MS VPC Image)
-			// see https://github.com/fnagel/jquery-ui/issues/147
-			if ( $.browser.msie && $.browser.version.substr( 0,1 ) == 7 ) {
-				self._refreshPosition();
+
+			// set menu width to either menuWidth option value, or the actual
+			// width of the button element, not that in order to do so, we
+			// must do this after we are sure it's shown
+			if ( o.style == 'dropdown' ) {
+				self.list.width( o.menuWidth ? o.menuWidth : self.newelement.width() );
+			} else {
+				self.list.width( o.menuWidth ? o.menuWidth : o.width - o.handleWidth );
 			}
-			var selected = self.list.attr('aria-hidden', false).find('li:not(.' + self.widgetBaseClass + '-group):eq(' + self._selectedIndex() + '):visible a');
-			if (selected.length) selected[0].focus();
-			// positioning needed for FF, Chrome, IE8, IE7, IE6 (tested 01.08.11 on MS VPC Image)
-			self._refreshPosition();			
-			
+
+			// this will actually show the menu
+			self.list.addClass( self.widgetBaseClass + '-open' );
+
+			// positioning needs to be done before calling focus() or scrolling will jump
+			// see https://github.com/fnagel/jquery-ui/issues/147
+			self._refreshPosition();
+
+			// FIXME: is this a duplicate?
+			self.list.attr('aria-hidden', false);
+
+			var selected = self.list.find('li:not(.' + self.widgetBaseClass + '-group):eq(' + self._selectedIndex() + '):visible a');
+			if ( selected.length > 0 ) {
+				selected[0].focus();
+			}
+
 			self._trigger("open", event, self._uiHash());
 		}
 	},
@@ -842,11 +849,12 @@ $.widget("ui.selectmenu", {
 
 	_refreshPosition: function() {
 		var o = this.options;
+		var _offset;
 
 		// if its a native pop-up we need to calculate the position of the selected li
 		if ( o.style == "popup" && !o.positionOptions.offset ) {
 			var selected = this._selectedOptionLi();
-			var _offset = "0 -" + ( selected.outerHeight() + selected.offset().top - this.list.offset().top );
+			_offset = "0 -" + ( selected.outerHeight() + selected.offset().top - this.list.offset().top );
 		}
 		// update zIndex if jQuery UI is able to process
 		var zIndexElement = this.element.zIndex();
