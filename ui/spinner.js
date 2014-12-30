@@ -102,6 +102,8 @@ return $.widget( "ui.spinner", {
 			}
 		});
 
+		options[ "disabled" ] = this.element.prop( "disabled" );
+
 		return options;
 	},
 
