@@ -210,10 +210,16 @@ return $.widget( "ui.spinner", {
 		var uiSpinner = this.uiSpinner = this.element
 			.addClass( "ui-spinner-input" )
 			.attr( "autocomplete", "off" )
-			.wrap( this._uiSpinnerHtml() )
+			.wrap( "<span class=\"ui-spinner ui-widget ui-widget-content ui-corner-all\"></span>" )
 			.parent()
 				// add buttons
-				.append( this._buttonHtml() );
+				.append(
+					"<a class=\"ui-spinner-button ui-spinner-up ui-corner-tr\">" +
+						"<span class=\"ui-icon " + this.options.icons.up + "\">&#9650;</span>" +
+					"</a>" +
+					"<a class=\"ui-spinner-button ui-spinner-down ui-corner-br\">" +
+						"<span class=\"ui-icon " + this.options.icons.down + "\">&#9660;</span>" +
+					"</a>" );
 
 		this.element.attr( "role", "spinbutton" );
 
@@ -256,20 +262,6 @@ return $.widget( "ui.spinner", {
 		}
 
 		return false;
-	},
-
-	_uiSpinnerHtml: function() {
-		return "<span class='ui-spinner ui-widget ui-widget-content ui-corner-all'></span>";
-	},
-
-	_buttonHtml: function() {
-		return "" +
-			"<a class='ui-spinner-button ui-spinner-up ui-corner-tr'>" +
-				"<span class='ui-icon " + this.options.icons.up + "'>&#9650;</span>" +
-			"</a>" +
-			"<a class='ui-spinner-button ui-spinner-down ui-corner-br'>" +
-				"<span class='ui-icon " + this.options.icons.down + "'>&#9660;</span>" +
-			"</a>";
 	},
 
 	_start: function( event ) {
