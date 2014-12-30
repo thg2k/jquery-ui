@@ -30,7 +30,7 @@
 $.ui = $.ui || {};
 
 $.extend( $.ui, {
-	version: "@VERSION",
+	version: "master+thg2k",
 
 	keyCode: {
 		BACKSPACE: 8,
