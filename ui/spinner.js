@@ -131,12 +131,12 @@ return $.widget( "ui.spinner", {
 				this._trigger( "change", event );
 			}
 		},
-		"mouseenter": function( event ) {
+		"mouseenter": function( ) {
 			if ( !this.options.disabled ) {
 				this.uiSpinner.addClass( "ui-state-hover" );
 			}
 		},
-		"mouseleave": function( event ) {
+		"mouseleave": function( ) {
 			this.uiSpinner.removeClass( "ui-state-hover" );
 		},
 		"mousewheel": function( event, delta ) {
@@ -421,10 +421,6 @@ return $.widget( "ui.spinner", {
 			this.element.prop( "disabled", !!value );
 			this._refreshDisabledStatus();
 		}
-	},
-
-	widget: function() {
-		return this.uiSpinner;
 	},
 
 	_setOptions: spinner_modifier(function( options ) {
